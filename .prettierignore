@@ -1,0 +1,29 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.turbo/
+coverage/
+
+# Database files
+/packages/database-schema/prisma/generated/
+/packages/database-schema/prisma/migrations/
+
+# Bun and lock files
+bun.lock
+bun.lockb
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
