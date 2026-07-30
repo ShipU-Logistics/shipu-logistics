@@ -1,0 +1,20 @@
+{
+    "name": "@shipu/config",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "devDependencies": {
+        "@shipu/typescript-config": "workspace:*",
+        "@types/bun": "latest",
+        "@types/dotenv": "^8.2.3"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "dotenv": "^17.4.2"
+    },
+    "exports": {
+        "./env": "./src/index.ts"
+    }
+}
