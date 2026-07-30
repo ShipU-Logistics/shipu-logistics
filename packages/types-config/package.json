@@ -1,0 +1,16 @@
+{
+    "name": "@shipu/types-config",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@shipu/typescript-config": "workspace:*"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "exports": {
+        "./types": "./src/index.ts"
+    }
+}
