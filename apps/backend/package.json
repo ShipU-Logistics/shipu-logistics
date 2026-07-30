@@ -1,0 +1,31 @@
+{
+    "name": "backend",
+    "module": "server.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "nodemon"
+    },
+    "devDependencies": {
+        "@shipu/config": "workspace:*",
+        "@shipu/database-schema": "workspace:*",
+        "@shipu/logger": "workspace:*",
+        "@shipu/rabbitmq": "workspace:*",
+        "@shipu/redis": "workspace:*",
+        "@shipu/types-config": "workspace:*",
+        "@shipu/typescript-config": "workspace:*",
+        "@types/bun": "latest",
+        "@types/express": "^5.0.6",
+        "@types/morgan": "^1.9.10",
+        "@types/nodemon": "^3.1.1"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "@types/node": "^26.1.1",
+        "express": "^5.2.1",
+        "morgan": "^1.11.0",
+        "nodemon": "^3.1.14"
+    }
+}
