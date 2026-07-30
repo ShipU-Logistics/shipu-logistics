@@ -1,0 +1,8 @@
+{
+    "name": "@shipu/tailwind-config",
+    "version": "1.0.0",
+    "private": true,
+    "exports": {
+        "./content": "./content.ts"
+    }
+}
