@@ -1,0 +1,25 @@
+{
+    "name": "@shipu/database-schema",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "devDependencies": {
+        "@types/bun": "latest",
+        "@shipu/typescript-config": "workspace:*",
+        "@shipu/logger": "workspace:*"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "@prisma/adapter-pg": "^7.9.0",
+        "@prisma/client": "^7.9.0",
+        "@prisma/client-runtime-utils": "^7.9.0",
+        "@types/node": "^26.1.1",
+        "dotenv": "^17.4.2",
+        "prisma": "^7.9.0"
+    },
+    "exports": {
+        "./prisma": "./src/index.ts"
+    }
+}
