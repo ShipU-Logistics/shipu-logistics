@@ -20,6 +20,8 @@
     },
     "exports": {
         "./redis": "./src/index.ts",
-        "./helper": "./src/helper.ts"
+        "./helper": "./src/helper.ts",
+        "./pubsub": "./src/pubsub.ts",
+        "./rateLimit": "./src/rateLimit.ts"
     }
 }

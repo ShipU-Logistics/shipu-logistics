@@ -157,3 +157,22 @@ Learn more about the power of Turborepo:
 - [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
 - [Configuration Options](https://turborepo.dev/docs/reference/configuration)
 - [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+
+### import { StatusCodes } from "http-status-codes"
+
+StatusCodes.OK // 200
+StatusCodes.CREATED // 201
+StatusCodes.NO_CONTENT // 204
+
+StatusCodes.BAD_REQUEST // 400
+StatusCodes.UNAUTHORIZED // 401
+StatusCodes.FORBIDDEN // 403
+StatusCodes.NOT_FOUND // 404
+StatusCodes.CONFLICT // 409
+StatusCodes.UNPROCESSABLE_ENTITY // 422
+StatusCodes.TOO_MANY_REQUESTS // 429
+
+StatusCodes.INTERNAL_SERVER_ERROR // 500
+StatusCodes.NOT_IMPLEMENTED // 501
+StatusCodes.BAD_GATEWAY // 502
+StatusCodes.SERVICE_UNAVAILABLE // 503

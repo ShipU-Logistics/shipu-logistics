@@ -1,4 +1,5 @@
 model Testing {
     id         String @id @default(cuid())
-    stringData String
+    stringData String?
+    intData    Int?
 }

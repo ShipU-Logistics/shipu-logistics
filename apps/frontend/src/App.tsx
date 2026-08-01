@@ -1,5 +1,5 @@
 function App() {
-    return <></>;
+    return <div>This is ShipU Logistics website</div>;
 }
 
 export default App;

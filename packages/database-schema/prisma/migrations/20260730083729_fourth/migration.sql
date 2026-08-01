@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Testing" ALTER COLUMN "stringData" DROP NOT NULL,
+ALTER COLUMN "intData" DROP NOT NULL;
