@@ -15,10 +15,12 @@ const app: Express = express();
 
 app.use(express.json());
 app.use(morgan('dev'));
-app.use(cors({
-    origin: '*',
-    credentials: true
-}))
+app.use(
+    cors({
+        origin: '*',
+        credentials: true,
+    }),
+);
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
