@@ -4,7 +4,7 @@ import pino, { type Logger, type LoggerOptions } from 'pino';
 /**
  * Environment flags used to configure logging behaviour.
  *
- * - Production: Optimized for structured machine-redable logs.
+ * - Production: Optimized for structured machine-readable logs.
  * - Test: Logging is disabled to keep test output clean.
  * - Development: Pretty-printed logs for easier debugging.
  */
@@ -24,7 +24,7 @@ const LOG_LEVEL = env.LOG_LEVEL ?? (isProduction ? 'info' : 'debug');
 /**
  * Sensitive fields that should never appear in application logs.
  *
- * Pino automatically replaces the values of these proper "[REDACTED]" before writing the log entry.
+ * Pino automatically replaces the values of these properties with "[REDACTED]" before writing the log entry.
  */
 const redactPaths = [
     'req.headers.authorization',
@@ -46,7 +46,7 @@ const baseOptions: LoggerOptions = {
     // Disable logging during tests to reduce console noise.
     level: isTest ? 'silent' : LOG_LEVEL,
 
-    // static metadata automatically included in every log entry.
+    // Static metadata automatically included in every log entry.
     base: {
         pid: process.pid,
         hostname: env.HOSTNAME ?? undefined,
@@ -74,7 +74,7 @@ const baseOptions: LoggerOptions = {
     /**
      * Serialize common objects into a structured format.
      *
-     * These serializers improve readability while preser debugging information.
+     * These serializers improve readability while preserving debugging information.
      */
     serializers: {
         err: pino.stdSerializers.err,
@@ -115,6 +115,38 @@ export const rootLogger: Logger = pino({
     ...baseOptions,
     transport,
 });
+
+/**
+ * Class-based Logger Service wrapper.
+ */
+export class LoggerService {
+    private instance: Logger;
+
+    constructor(service: string, bindings: Record<string, unknown> = {}) {
+        this.instance = rootLogger.child({ service, ...bindings });
+    }
+
+    /**
+     * Creates a child logger with additional contextual bindings.
+     */
+    public child(bindings: Record<string, unknown>): Logger {
+        return this.instance.child(bindings);
+    }
+
+    /**
+     * Returns the underlying Pino logger instance.
+     */
+    public getLogger(): Logger {
+        return this.instance;
+    }
+
+    /**
+     * Static factory method to instantiate a child logger.
+     */
+    public static create(service: string, bindings: Record<string, unknown> = {}): Logger {
+        return new LoggerService(service, bindings).getLogger();
+    }
+}
 
 /**
  * Creates a child logger scoped to a specific service or module.

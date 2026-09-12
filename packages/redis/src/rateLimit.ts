@@ -18,7 +18,7 @@ const log = logger.child({ module: 'redis-ratelimit' });
  * Before each request, expired entries are removed so only requests within the configured time window are considered.
  */
 
-export const rateLimit = {
+export class RateLimitService {
     /**
      * Checks whether a request is allowed under the configured sliding window rate limit.
      *
@@ -33,7 +33,7 @@ export const rateLimit = {
      * @param keyPrefix - keyPrefix Redis key namespace.
      * @returns Current rate limit status
      */
-    async check(
+    public async check(
         identifier: string,
         maxRequest: number,
         windowSeconds: number,
@@ -123,5 +123,8 @@ export const rateLimit = {
             remaining: maxRequest - (currentCount + 1),
             resetTime: now + windowSeconds * 1000,
         };
-    },
-};
+    }
+}
+
+export const rateLimitService = new RateLimitService();
+export const rateLimit = rateLimitService;

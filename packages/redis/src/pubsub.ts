@@ -9,7 +9,7 @@ const log = logger.child({ module: 'redis-pubsub' });
  *
  * Provides a simple abstraction over Redis Pub/Sub while handling connection management, structured logging, and error propagation.
  */
-export const pubsub = {
+export class PubSubService {
     /**
      * Publishes a message to a Redis channel.
      *
@@ -19,7 +19,7 @@ export const pubsub = {
      * @param message - Message payload.
      * @returns - Number of subscribers that received the message.
      */
-    async publish(channel: string, message: string): Promise<number> {
+    public async publish(channel: string, message: string): Promise<number> {
         try {
             const redis = getRedisClient();
             return await redis.publish(channel, message);
@@ -27,18 +27,18 @@ export const pubsub = {
             log.error({ error, channel }, 'Redis publish error');
             throw error;
         }
-    },
+    }
 
     /**
      * Creates a dedicated Redis subscriber connection.
      *
-     * A duplicated Redis connection is required because enters subscriber mode, it can no longer execute n commands such as GET, SET or DEL.
+     * A duplicated Redis connection is required because once a client enters subscriber mode, it can no longer execute standard commands such as GET, SET or DEL.
      *
      * @param channels - One or more channels to subscribe to.
      * @param callback - Invoked whenever a message is received.
      * @returns - The active Redis subscriber connection.
      */
-    async subscribe(
+    public async subscribe(
         channels: string | string[],
         callback: (channel: string, message: string) => void,
     ): Promise<Redis> {
@@ -71,9 +71,9 @@ export const pubsub = {
             });
 
             /**
-             * Listen for message published to the subscribed channels.
+             * Listen for messages published to the subscribed channels.
              *
-             * Ebery received message is forwarded to the caller's callback for application-specified processing.
+             * Every received message is forwarded to the caller's callback for application-specified processing.
              */
             subscriber.on('message', (channel, message) => {
                 log.debug({ channel }, 'Redis message received');
@@ -89,5 +89,8 @@ export const pubsub = {
                 log.error({ error, channels: channelArray }, 'Redis subscriber connection error');
             });
         });
-    },
-};
+    }
+}
+
+export const pubsubService = new PubSubService();
+export const pubsub = pubsubService;

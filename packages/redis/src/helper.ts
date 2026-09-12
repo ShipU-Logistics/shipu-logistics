@@ -10,13 +10,13 @@ const log = logger.child({ module: 'redis-helper' });
  * - All values are stored as JSON strings to support arbitrary objects while exposing typed results to consumers.
  */
 
-export const cache = {
+export class CacheService {
     /**
      * Retrieves and deserializes a value from Redis.
      * @param token - Cache key.
      * @returns The parsed value if the key exists, otherwise null.
      */
-    async get<T = string>(token: string): Promise<T | null> {
+    public async get<T = string>(token: string): Promise<T | null> {
         const redis = getRedisClient();
         const value = await redis.get(token);
 
@@ -27,7 +27,7 @@ export const cache = {
             log.error({ error }, `Redis get error of key ${token}`);
             return null;
         }
-    },
+    }
 
     /**
      * Serializes and stores a value in Redis.
@@ -37,7 +37,7 @@ export const cache = {
      * @param ttl - Optional expiration time in seconds.
      * @returns True if the operation succeeds.
      */
-    async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
+    public async set(key: string, value: unknown, ttl?: number): Promise<boolean> {
         try {
             const stringValue = JSON.stringify(value);
             const redis = getRedisClient();
@@ -52,14 +52,14 @@ export const cache = {
             log.error({ error }, `Redis set error ${key}`);
             return false;
         }
-    },
+    }
 
     /**
      * Removes a single key from Redis.
      * @param key - Cache key.
      * @returns True if the delete operation succeeds.
      */
-    async delete(key: string): Promise<boolean> {
+    public async delete(key: string): Promise<boolean> {
         try {
             const redis = getRedisClient();
             await redis.del(key);
@@ -68,14 +68,14 @@ export const cache = {
             log.error({ error }, `Redis delete error ${key}`);
             return false;
         }
-    },
+    }
 
     /**
      * Removes multiple keys in a single Redis command.
      * @param keys - Collection of cache keys.
      * @returns Number of keys successfully removed.
      */
-    async deleteMany(keys: string[]): Promise<number> {
+    public async deleteMany(keys: string[]): Promise<number> {
         try {
             const redis = getRedisClient();
             if (keys.length === 0) return 0;
@@ -84,14 +84,14 @@ export const cache = {
             log.error({ error }, `Redis delete many error ${keys}`);
             return 0;
         }
-    },
+    }
 
     /**
      * Determines whether a cache key exists.
      * @param key - Cache key.
      * @returns True if the key exists.
      */
-    async exists(key: string): Promise<boolean> {
+    public async exists(key: string): Promise<boolean> {
         try {
             const redis = getRedisClient();
             const result = await redis.exists(key);
@@ -100,7 +100,7 @@ export const cache = {
             log.error({ error }, `Redis exists error ${key}`);
             return false;
         }
-    },
+    }
 
     /**
      * Updates the expiration time of an existing cache key.
@@ -108,7 +108,7 @@ export const cache = {
      * @param seconds - New expiration time in seconds.
      * @returns True if the expiration was updated.
      */
-    async expire(key: string, seconds: number): Promise<boolean> {
+    public async expire(key: string, seconds: number): Promise<boolean> {
         try {
             const redis = getRedisClient();
             const result = await redis.expire(key, seconds);
@@ -117,7 +117,7 @@ export const cache = {
             log.error({ error }, `Redis expire error: ${key}`);
             return false;
         }
-    },
+    }
 
     /**
      * Retrieves the remaining lifetime of a cache key.
@@ -125,12 +125,12 @@ export const cache = {
      * Return values:
      * - Positive number: Remaining seconds.
      * - -1: Key exists without expiration.
-     * - -2: Key does not exists.
+     * - -2: Key does not exist.
      *
      * @param key  - Cache key
      * @returns Remaining TTL in seconds.
      */
-    async ttl(key: string): Promise<number> {
+    public async ttl(key: string): Promise<number> {
         try {
             const redis = getRedisClient();
             return await redis.ttl(key);
@@ -138,15 +138,15 @@ export const cache = {
             log.error({ error }, `Redis ttl error: ${key}`);
             return 0;
         }
-    },
+    }
 
     /**
      * Atomically retrieves a value and removes the key.
-     * - Useful for ont-time tokens, temporary locks, and queue-like processing where data should only be consumed once.
+     * - Useful for one-time tokens, temporary locks, and queue-like processing where data should only be consumed once.
      * @param key - Cache key.
      * @returns Parsed cached value or null.
      */
-    async getAndDelete<T = string>(key: string): Promise<T | null> {
+    public async getAndDelete<T = string>(key: string): Promise<T | null> {
         try {
             const redis = getRedisClient();
             const value = await redis.getdel(key);
@@ -163,16 +163,16 @@ export const cache = {
             log.error({ error }, `Redis get and delete error: ${key}`);
             return null;
         }
-    },
+    }
 
     /**
      * Atomically increments a numeric value.
-     * - If the key does not exists, Redis initializes it to zero before applying the increment.
+     * - If the key does not exist, Redis initializes it to zero before applying the increment.
      * @param key - Cache key.
      * @param by - Increment amount.
      * @returns Updated numeric value.
      */
-    async incrementBy(key: string, by: number = 1): Promise<number> {
+    public async incrementBy(key: string, by: number = 1): Promise<number> {
         try {
             const redis = getRedisClient();
             return await redis.incrby(key, by);
@@ -180,7 +180,7 @@ export const cache = {
             log.error({ error }, `Redis incrementBy error: ${key}`);
             throw error;
         }
-    },
+    }
 
     /**
      * Atomically decrements a numeric value.
@@ -189,7 +189,7 @@ export const cache = {
      * @param by - Decrement amount.
      * @returns Updated numeric value.
      */
-    async decrementBy(key: string, by: number = 1): Promise<number> {
+    public async decrementBy(key: string, by: number = 1): Promise<number> {
         try {
             const redis = getRedisClient();
             return await redis.decrby(key, by);
@@ -197,5 +197,8 @@ export const cache = {
             log.error({ error }, `Redis decrementBy error: ${key}`);
             throw error;
         }
-    },
-};
+    }
+}
+
+export const cacheService = new CacheService();
+export const cache = cacheService;

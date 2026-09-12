@@ -7,9 +7,9 @@ const log = logger.child({ module: 'rabbitmq-helper' });
 /**
  * RabbitMQ queue helper.
  *
- * Provides a high-level abstraction for publishing messages to queues and consuming them with automatic acknowledgements, structured, logging and error handling
+ * Provides a high-level abstraction for publishing messages to queues and consuming them with automatic acknowledgements, structured logging, and error handling.
  */
-export const queue = {
+export class QueueService {
     /**
      * Publishes a message to a RabbitMQ queue.
      *
@@ -20,7 +20,7 @@ export const queue = {
      * @param message - Message payload.
      * @returns - True if RabbitMQ accepted the message into its internal buffer.
      */
-    async publish(queueName: string, message: QueueMessage): Promise<boolean> {
+    public async publish(queueName: string, message: QueueMessage): Promise<boolean> {
         try {
             const channel = getChannel();
 
@@ -34,7 +34,7 @@ export const queue = {
             /**
              * Publish the serialized message.
              *
-             * Persistent message improve durability by allowing the broker to write them to disk when possible.
+             * Persistent messages improve durability by allowing the broker to write them to disk when possible.
              */
             const sent = channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), {
                 persistent: true,
@@ -54,19 +54,19 @@ export const queue = {
             log.error({ error }, 'Failed to publish to queue');
             return false;
         }
-    },
+    }
 
     /**
      * Registers a consumer for a RabbitMQ queue.
      *
-     * Message are processed one at a time by the supplied callback.
-     * Successful processing acknowledges the message, while failure reject it to prevent invalid or failed messages from remaining unacknowledged indefinitely.
+     * Messages are processed one at a time by the supplied callback.
+     * Successful processing acknowledges the message, while failure rejects it to prevent invalid or failed messages from remaining unacknowledged indefinitely.
      *
      * @param queueName - Queue to consume.
      * @param callback - Business logic executed for each message.
      * @param options - Optional consumer configuration.
      */
-    async consume(
+    public async consume(
         queueName: string,
         callback: (message: QueueMessage) => Promise<void>,
         options?: { prefetch?: number },
@@ -80,7 +80,7 @@ export const queue = {
             /**
              * Limit the number of unacknowledged messages delivered simultaneously to this consumer.
              *
-             * This provides backpressure and prevents a from receiving more work than it can process.
+             * This provides backpressure and prevents a consumer from receiving more work than it can process.
              */
             if (options?.prefetch) {
                 channel.prefetch(options.prefetch);
@@ -93,7 +93,7 @@ export const queue = {
 
                     let content: QueueMessage;
 
-                    /**'
+                    /**
                      * Deserialize the incoming message.
                      *
                      * Invalid JSON is treated as a poison message and is permanently rejected to prevent infinite retries.
@@ -118,20 +118,20 @@ export const queue = {
                     } catch (processingError) {
                         log.error(
                             { error: processingError, messageId: msg.properties.messageId },
-                            'Error processing messsage - requeueing for retry',
+                            'Error processing message - requeueing for retry',
                         );
 
                         /**
                          * Reject the message without requeueing.
                          *
-                         * This prevents continuously failing message from creating an infinite processing loop.
+                         * This prevents continuously failing messages from creating an infinite processing loop.
                          * Dead Letter Queues (DLQs) should be configured for production retry handling.
                          */
                         channel.nack(msg, false, false);
                     }
                 },
 
-                // Manual acknowledgements ensure message are only removed after successful processing.
+                // Manual acknowledgements ensure messages are only removed after successful processing.
                 { noAck: false },
             );
 
@@ -140,5 +140,7 @@ export const queue = {
             log.error({ error }, 'Failed to consume from queue');
             throw error;
         }
-    },
-};
+    }
+}
+export const queueService = new QueueService();
+export const queue = queueService;

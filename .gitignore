@@ -67,3 +67,5 @@ Thumbs.db
 # Database / Prisma generated folders (schema specific)
 # ==============================================================================
 packages/database-schema/prisma/generated/
+
+test.ts

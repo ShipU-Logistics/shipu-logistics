@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const log = logger.child({ module: 'bck-index' });
 
-app.get('/health-check', async (req: Request, res: Response) => {
+app.get('/health-check', async (_req: Request, res: Response) => {
     const response: SuccessResponse = {
         success: true,
         message: 'Backend is healthy and working',

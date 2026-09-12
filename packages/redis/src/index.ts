@@ -8,103 +8,117 @@ const log = logger.child({ module: 'redis-connection' });
 // Redis connection URL loaded from shared config package
 const REDIS_URL = env.REDIS_URL;
 
-// Singleton Redis client shared across the application
-let redisClient: Redis | null = null;
-
 /**
- * Global cache used during development.
- *
- * - Development environments may reload modules without restarting the process. Caching the Redis client prevents duplicate connections from being created during hot reloads.
+ * Global cache used during development to prevent duplicate connections.
  */
 const globalForRedis = globalThis as unknown as {
     redis?: Redis;
 };
 
 /**
- * Establishes a connection to the Redis server.
- *
- * - Connection strategy:
- * 1. Return the existing client if already connected.
- * 2. Reuse the cached client during development.
- * 3. Otherwise create a new Redis client.
- *
- * This function is safe to call multiple times and guarantees a single Redis client instance throughout the application.
+ * Class-based Redis Service managing connection lifecycle, event listeners, and client access.
  */
-export const connectToRedis = async (): Promise<Redis> => {
-    try {
-        // Reuse the active client.
-        if (redisClient) {
-            return redisClient;
-        }
+export class RedisService {
+    private static instance: RedisService;
+    private client: Redis | null = null;
 
-        // Reuse the cached client during development.
-        if (globalForRedis.redis) {
-            redisClient = globalForRedis.redis;
-            return redisClient;
-        }
+    private constructor() {}
 
-        // Validate the Redis connection string.
-        if (!REDIS_URL) {
-            const message = 'REDIS_URL is required';
+    /**
+     * Gets the Singleton instance of RedisService.
+     */
+    public static getInstance(): RedisService {
+        if (!RedisService.instance) {
+            RedisService.instance = new RedisService();
+        }
+        return RedisService.instance;
+    }
+
+    /**
+     * Establishes a connection to the Redis server.
+     */
+    public async connect(): Promise<Redis> {
+        try {
+            if (this.client) {
+                return this.client;
+            }
+
+            if (globalForRedis.redis) {
+                this.client = globalForRedis.redis;
+                return this.client;
+            }
+
+            if (!REDIS_URL) {
+                const message = 'REDIS_URL is required';
+                log.error(message);
+                throw new Error(message);
+            }
+
+            const client = new Redis(REDIS_URL, {
+                maxRetriesPerRequest: null,
+                enableReadyCheck: true,
+                retryStrategy(times) {
+                    return Math.max(times * 5, 2000);
+                },
+                reconnectOnError(error) {
+                    return error.message.includes('READONLY');
+                },
+            });
+
+            this.setupEventListeners(client);
+            this.registerShutdownHandlers(client);
+
+            this.client = client;
+
+            if (env.NODE_ENV !== 'production') {
+                globalForRedis.redis = client;
+            }
+
+            return client;
+        } catch (error) {
+            log.error({ error }, 'Failed to connect redis client');
+            throw error;
+        }
+    }
+
+    /**
+     * Returns the active Redis client instance.
+     * @throws Error if client is not connected.
+     */
+    public getClient(): Redis {
+        if (!this.client) {
+            const message = 'Redis client not initialized. Call connect() first.';
             log.error(message);
             throw new Error(message);
         }
+        return this.client;
+    }
 
-        // Create a Redis client with the production-friendly reconnect and retry configuration.
-        const client = new Redis(REDIS_URL, {
-            // Required when Redis is used with blocking commands, queues or pub/sub.
-            maxRetriesPerRequest: null,
+    /**
+     * Gracefully disconnects the Redis client.
+     */
+    public async disconnect(): Promise<void> {
+        if (this.client) {
+            await this.client.quit();
+            this.client = null;
+            log.info('Redis connection closed gracefully');
+        }
+    }
 
-            // Wait until Redis is fully redis before accepting requests
-            enableReadyCheck: true,
+    /**
+     * Registers event listeners on the Redis client.
+     */
+    private setupEventListeners(client: Redis): void {
+        client.on('connect', () => log.info('Redis connecting'));
+        client.on('ready', () => log.info('Redis is connected and ready'));
+        client.on('error', (error) => log.error({ error }, 'Redis error'));
+        client.on('reconnecting', () => log.info('Redis reconnecting'));
+    }
 
-            /**
-             * Configure exponential reconnection attempts.
-             *
-             * - Returning a number instructs ioredis to reconnect after the specified delay
-             */
-            retryStrategy(times) {
-                const delay = Math.max(times * 5, 2000);
-                return delay;
-            },
-
-            /**
-             * Automatically reconnect when the server becomes temporarily read-only (for example, during failover).
-             */
-            reconnectOnError(error) {
-                const targetError = 'READONLY';
-                if (error.message.includes(targetError)) {
-                    return true;
-                }
-                return false;
-            },
-        });
-
-        /**
-         * Register Redis lifecycle events for logging and monitoring
-         */
-        client.on('connect', () => {
-            log.info('Redis connecting');
-        });
-
-        client.on('ready', () => {
-            log.info('Redis is connected and ready');
-        });
-
-        client.on('error', (error) => {
-            log.error({ error }, 'Redis error');
-        });
-
-        client.on('reconnecting', () => {
-            log.info('Redis reconnecting');
-        });
-
-        /**
-         * Register graceful shutdown handlers.
-         *
-         * - Closing the Redis client ensures pending commands are flushed before the application terminates.
-         */
-
+    /**
+     * Registers process termination handlers.
+     */
+    private registerShutdownHandlers(client: Redis): void {
         if (typeof process !== 'undefined') {
             process.on('SIGINT', async () => {
                 await client.quit();
@@ -116,38 +130,20 @@ export const connectToRedis = async (): Promise<Redis> => {
                 process.exit(0);
             });
         }
-
-        // Cache the client for future requests.
-        redisClient = client;
-
-        // Preserve the client across hot reloads during development.
-        if (env.NODE_ENV !== 'production') {
-            globalForRedis.redis = client;
-        }
-
-        return client;
-    } catch (error) {
-        log.error({ error }, 'Failed to connect redis client');
-        throw error;
     }
-};
+}
 
 /**
- * Returns the active Redis client.
- *
- * @throws {Error}
- * - Throws when the Redis client has not been initialized.
+ * Singleton instance export and backwards compatibility functions.
  */
+export const redisService = RedisService.getInstance();
+
+export const connectToRedis = async (): Promise<Redis> => {
+    return redisService.connect();
+};
+
 export const getRedisClient = (): Redis => {
-    if (!redisClient) {
-        const message = 'Redis client not initialized. Call connectToRedis() first.';
-        log.error(message);
-        throw new Error(message);
-    }
-    return redisClient;
+    return redisService.getClient();
 };
 
-/**
- * Re-export the Redis type so consuming packages can import everything from a single module.
- */
 export { Redis };

@@ -1,4 +1,4 @@
-import { rateLimit } from '@shipu/redis/rateLimit';
+import { rateLimit, rateLimitService } from '@shipu/redis/rateLimit';
 import { NextFunction, Request, Response } from 'express';
 
 // Configuration options for the rate limiting middleware
@@ -22,72 +22,33 @@ interface RateLimitOptions {
     identifier?: (req: Request) => string;
 }
 
-/**
-* Creates an Express middleware that enforces Redis-backend sliding window rate limiting.
-*
-* The middleware:
-* 1. Identifies the client.
-* 2. Checks the configured rate limit.
-* 3. Exposes standard rate limit headers.
-* 4. Rejects requests that exceed the configured limit.
+// Class-based Rate Limiter Middleware encapsulating Redis sliding window rate limiting.
+export class RateLimitMiddleware {
+    // Creates an Express middleware handler for rate limiting.
+    public static limit(options: RateLimitOptions) {
+        const { maxRequests, windowSeconds, keyPrfix = 'rateLimit', identifier } = options;
 
-* @param options - Rate limiter configuration.
-* @returns Express middleware.
-*/
+        return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+            try {
+                const clientIdentifier = identifier?.(req) ?? req.ip ?? req.socket.remoteAddress ?? 'unknown';
 
-export const rateLimitMiddleware = ({
-    maxRequests,
-    windowSeconds,
-    keyPrefix = 'rateLimit',
-    identifier,
-}: RateLimitOptions) => {
-    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        try {
-            /**
-             * Determine the unique identifier used for rate limiting.
-             *
-             * Resolution order:
-             * 1. Custom identifier callback.
-             * 2. Express request IP.
-             * 3. underlying socket address.
-             * 4. Fallback identifer.
-             */
-            const clientIdentifier =
-                identifier?.(req) ?? req.ip ?? req.socket.remoteAddress ?? 'unknown';
+                const result = await rateLimitService.check(
+                    clientIdentifier,
+                    maxRequests,
+                    windowSeconds,
+                    keyPrfix
+                );
 
-            // Evaluating the request against the configured sliding window rate limiter.
-            const result = await rateLimit.check(
-                clientIdentifier,
-                maxRequests,
-                windowSeconds,
-                keyPrefix,
-            );
+                res.setHeader('X-RateLimit-Limit', maxRequests);
+                res.setHeader('X-RateLimit-Remaining', result.remaining);
+                res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTime / 1000));
 
-            // Expose standard rate limit headers so client can monitor their current quota.
-            res.setHeader('X-RateLimit-Limit', maxRequests);
-
-            res.setHeader('X-RateLimit-Remaining', result.remaining);
-
-            // Reset time is returned as a Unix timestamp in seconds, matching the format expected by most HTTP clients.
-            res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTime / 1000));
-
-            /**
-             * Reject requests that exceed the configured limit.
-             *
-             * The Reject-After header is included when available to indicate when the client may safely retry.
-             */
-
-            if (!result.allowed) {
-                if (result.retryAfter !== undefined) {
-                    res.setHeader('Retry-After', result.retryAfter);
+                if (result.allowed) {
+                    
                 }
-
-                // continue processing the request.
-                next();
+            } catch (error) {
+                
             }
-        } catch (error) {
-            // Forward unexpected errors to the global error handler.
-            next(error);
         }
-    };
-};
+    }
+}

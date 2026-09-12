@@ -1,3 +1,3 @@
 import { createLogger, type Logger } from '@shipu/logger/service-logger';
 
-export const logger: Logger = createLogger('backend');
+export const logger: Logger = createLogger('shipu-backend');

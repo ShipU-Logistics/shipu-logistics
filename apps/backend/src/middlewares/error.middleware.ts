@@ -1,26 +1,40 @@
 import { env } from '@shipu/config/env';
-import { ErrorRequestHandler } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
-import ShipUError from '../utils/error.utils.ts';
+import { ShipUError } from '../common/app.error.ts';
+import { logger } from '../lib/logger.ts';
 
-const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
-    const error =
-        err instanceof ShipUError
-            ? err
-            : new ShipUError(
-                  ReasonPhrases.INTERNAL_SERVER_ERROR,
-                  StatusCodes.INTERNAL_SERVER_ERROR,
-              );
+const log = logger.child({ module: 'error-middleware' });
 
-    res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-        ...(env.NODE_ENV !== 'production' && {
-            stack: error.stack,
-        }),
-    });
-    return;
-};
+/**
+ * Class-based Global Error Middleware.
+ */
+export class ErrorMiddleware {
+    /**
+     * Express error handler method.
+     */
+    public static handle(err: Error, _req: Request, res: Response, _next: NextFunction): Response {
+        const error =
+            err instanceof ShipUError
+                ? err
+                : new ShipUError(
+                      err.message || ReasonPhrases.INTERNAL_SERVER_ERROR,
+                      StatusCodes.INTERNAL_SERVER_ERROR,
+                      false,
+                  );
 
-export default errorMiddleware;
+        log.error({ err: error }, `[${error.statusCode}] ${error.message}`);
+
+        return res.status(error.statusCode).json({
+            success: false,
+            statusCode: error.statusCode,
+            message: error.message,
+            ...(env.NODE_ENV !== 'production' && {
+                stack: error.stack,
+            }),
+        });
+    }
+}
+
+export default ErrorMiddleware.handle;

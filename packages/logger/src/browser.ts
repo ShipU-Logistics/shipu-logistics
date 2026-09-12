@@ -1,10 +1,10 @@
-// Supported logs levels ordered from lowest to highest severity.
+// Supported log levels ordered from lowest to highest severity.
 type Level = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
 /**
  * Numeric priority assigned to each log level.
  *
- * Higher numbers represent higher severity and are used whether a log entry should be emitted.
+ * Higher numbers represent higher severity and are used to determine whether a log entry should be emitted.
  */
 const LEVEL_ORDER: Record<Level, number> = {
     trace: 10,
@@ -15,7 +15,7 @@ const LEVEL_ORDER: Record<Level, number> = {
     fatal: 60,
 };
 
-// Access vite environment variables while preserving compatibility with TypeScript outside of the browser runtime.
+// Access Vite environment variables while preserving compatibility with TypeScript outside of the browser runtime.
 const _meta = import.meta as unknown as { env?: { VITE_LOG_LEVEL?: Level } };
 
 /**
@@ -30,7 +30,7 @@ const currentLevel: Level =
     _meta.env?.VITE_LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 
 /**
- * Determines whether a log entry should be emitted based currently configured log level.
+ * Determines whether a log entry should be emitted based on the currently configured log level.
  *
  * @param level - Severity of the log being written.
  * @returns True if the log should be output.
@@ -42,12 +42,11 @@ function shouldLog(level: Level) {
 /**
  * Writes a structured log entry to the browser console.
  *
- * Message below the configured log level are ignored. Depending on severity, the appropriate console method is selected to improve visibility during development.
+ * Messages below the configured log level are ignored. Depending on severity, the appropriate console method is selected to improve visibility during development.
  *
  * @param level - Log severity.
  * @param obj - Structured log metadata.
  * @param msg - Optional log message.
- * @returns
  */
 function log(level: Level, obj: unknown, msg?: string) {
     if (!shouldLog(level)) return;
@@ -68,7 +67,7 @@ function log(level: Level, obj: unknown, msg?: string) {
 }
 
 /**
- * Safely converts an unknowm value into a plain object.
+ * Safely converts an unknown value into a plain object.
  *
  * Non-object values return an empty object, allowing metadata to be merged without runtime errors.
  *

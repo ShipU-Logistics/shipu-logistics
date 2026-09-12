@@ -12,19 +12,17 @@ const log = logger.child({ module: 'database-connection' });
 
 /**
  * Resolve the current file and directory path.
- * Since ES Modules don't provide __dirname__ and  __filename__ like commonJS,
- * we recreate them using the fileURLToPath().
+ * Since ES Modules don't provide __dirname__ and __filename__ like CommonJS,
+ * we recreate them using fileURLToPath().
  */
-
 const __filename__ = fileURLToPath(import.meta.url);
 const __dirname__ = path.dirname(__filename__);
 
 // Loading the .env variable from the project's .env file in root directory
 const envResult = config({ path: path.join(__dirname__, '../.env') });
 
-// warn if .env file could not be loaded
 if (envResult.error) {
-    log.warn('Warning: could not load .env from');
+    log.warn('Warning: could not load .env file');
 }
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -36,74 +34,91 @@ if (!DATABASE_URL) {
 }
 
 /**
- * Create a global object to cache the Prisma client.
- *
- * - In development, hot reload can execute this file multiple times.
- * - Storing the client on globalThis prevents creating multiple database connection pools.
+ * Global cache object used during development to prevent duplicate database connection pools.
  */
 const globalForPrisma = globalThis as unknown as {
     prisma?: PrismaClient;
 };
 
 /**
- * Create the Prisma client.
- *
- * - Reuse the existing client if one already exists.
- * - Otherwise, create a new Prisma client using the PostgreSQL adapter.
+ * DatabaseService class managing the Prisma client connection lifecycle and graceful shutdown.
  */
-export const prisma =
-    globalForPrisma.prisma ??
-    new PrismaClient({
-        adapter: new PrismaPg({
-            connectionString: DATABASE_URL,
-        }),
-    });
+export class DatabaseService {
+    private static instance: DatabaseService;
+    public readonly client: PrismaClient;
+    private isDisconnecting = false;
 
-// Cache the Prisma client globally in developemnt.
-if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = prisma;
-}
+    private constructor() {
+        this.client =
+            globalForPrisma.prisma ??
+            new PrismaClient({
+                adapter: new PrismaPg({
+                    connectionString: DATABASE_URL,
+                }),
+            });
 
-/**
- * Graceful Shutdown
- *
- * - Before the application exists, disconnect Prisma so that all database connections are closed cleanly.
- * - The flag ensures disconnect() is called only once even if multiple shutdown events are triggered.
- */
-let isDisconnecting = false;
+        if (process.env.NODE_ENV !== 'production') {
+            globalForPrisma.prisma = this.client;
+        }
 
-const disconnectPrisma = async () => {
-    // prevent duplicate disconnect attempts.
-    if (isDisconnecting) return;
-    isDisconnecting = true;
-    try {
-        await prisma.$disconnect();
-    } catch (err) {
-        log.error({ err }, 'Error disconnecting Prisma');
+        this.registerShutdownHandlers();
     }
-};
+
+    /**
+     * Gets the Singleton instance of DatabaseService.
+     */
+    public static getInstance(): DatabaseService {
+        if (!DatabaseService.instance) {
+            DatabaseService.instance = new DatabaseService();
+        }
+        return DatabaseService.instance;
+    }
+
+    /**
+     * Returns the active Prisma Client instance.
+     */
+    public getClient(): PrismaClient {
+        return this.client;
+    }
+
+    /**
+     * Gracefully disconnects the Prisma client database connection pool.
+     */
+    public async disconnect(): Promise<void> {
+        if (this.isDisconnecting) return;
+        this.isDisconnecting = true;
+        try {
+            await this.client.$disconnect();
+            log.info('Prisma disconnected successfully');
+        } catch (err) {
+            log.error({ err }, 'Error disconnecting Prisma');
+        }
+    }
+
+    /**
+     * Registers process termination handlers to cleanly disconnect the database pool.
+     */
+    private registerShutdownHandlers(): void {
+        if (typeof process !== 'undefined') {
+            process.on('SIGINT', async () => {
+                await this.disconnect();
+                process.exit(0);
+            });
+
+            process.on('SIGTERM', async () => {
+                await this.disconnect();
+                process.exit(0);
+            });
+
+            process.on('beforeExit', async () => {
+                await this.disconnect();
+            });
+        }
+    }
+}
 
 /**
- * Register process shutdown handlers.
- *
- * - SIGINT -> Triggered when the user presses Ctrl + c.
- * - SIGTERM -> Triggered when the operating system or Docker stops the app.
- * - beforeExit -> Fired when Node.js is about to exit naturally.
- *
- * Each handler disconnects Prisma before the process exists.
+ * Export singleton instance and convenience exports for backwards compatibility.
  */
-if (typeof process !== 'undefined') {
-    process.on('SIGINT', async () => {
-        await disconnectPrisma();
-        process.exit(0);
-    });
-
-    process.on('SIGTERM', async () => {
-        await disconnectPrisma();
-        process.exit(0);
-    });
-
-    process.on('beforeExit', async () => {
-        await disconnectPrisma();
-    });
-}
+export const databaseService = DatabaseService.getInstance();
+export const prisma = databaseService.getClient();
