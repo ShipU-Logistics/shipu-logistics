@@ -1,27 +1,27 @@
 {
-    "name": "@shipu/redis",
-    "module": "index.ts",
-    "type": "module",
-    "private": true,
-    "devDependencies": {
-        "@types/bun": "latest",
-        "@types/ioredis": "^5.0.0",
-        "@shipu/typescript-config": "workspace:*",
-        "@shipu/config": "workspace:*",
-        "@shipu/types-config": "workspace:*",
-        "@shipu/logger": "workspace:*"
-    },
-    "peerDependencies": {
-        "typescript": "^7.0.2"
-    },
-    "dependencies": {
-        "@types/node": "^26.1.1",
-        "ioredis": "^5.11.1"
-    },
-    "exports": {
-        "./redis": "./src/index.ts",
-        "./helper": "./src/helper.ts",
-        "./pubsub": "./src/pubsub.ts",
-        "./rateLimit": "./src/rateLimit.ts"
-    }
+  "name": "@shipu/redis",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@shipu/config": "workspace:*",
+    "@shipu/logger": "workspace:*",
+    "@shipu/types-config": "workspace:*",
+    "@shipu/typescript-config": "workspace:*",
+    "@types/bun": "latest",
+    "@types/ioredis": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@types/node": "^26.1.1",
+    "ioredis": "^5.11.1"
+  },
+  "exports": {
+    "./redis": "./src/index.ts",
+    "./helper": "./src/helper.ts",
+    "./pubsub": "./src/pubsub.ts",
+    "./rateLimit": "./src/rateLimit.ts"
+  }
 }

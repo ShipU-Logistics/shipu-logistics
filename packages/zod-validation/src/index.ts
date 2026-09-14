@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ZodSchema } from 'zod/v3';
+// packages/zod-validation/src/index.ts
+import { z, type ZodType } from 'zod'; // ✅ Remove 'zod/v3'
 
 export const testValidationSchema = z.object({
     stringData: z.string().max(20, 'Cannot exceed the maximum limit').optional(),
@@ -12,19 +12,22 @@ export const testValidationSchema = z.object({
 export type TestValidation = z.infer<typeof testValidationSchema>;
 
 /**
- * class based validation service using zod schemas.
+ * Class-based validation service using Zod schemas.
  */
-
 export class ValidationService {
-    // Validates data against a zod schema.
-
+    /**
+     * Validates data against a Zod schema.
+     */
     public static validate<T>(
-        schema: ZodSchema<T>,
+        schema: ZodType<T>,
         data: unknown,
     ): { success: boolean; data?: T; error?: string } {
         const result = schema.safeParse(data);
         if (!result.success) {
-            return { success: false, error: result.error.message };
+            const message = result.error.issues
+                .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+                .join(', ');
+            return { success: false, error: message };
         }
         return {
             success: true,

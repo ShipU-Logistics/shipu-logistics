@@ -1,77 +1,81 @@
-import { prisma } from '@shipu/database-schema/prisma';
-import { testValidationSchema } from '@shipu/zod-validation/zod-validation';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import express, { type Express, NextFunction, Request, Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
+import express, { type Application } from 'express';
 import morgan from 'morgan';
 
-import { logger } from './lib/logger.ts';
-import { SuccessResponse } from './lib/types.ts';
 import errorMiddleware from './middlewares/error.middleware.ts';
-import ShipUError from './utils/error.utils.ts';
+import { NotFoundMiddleware } from './middlewares/noFound.middleware.ts';
+import { RateLimitMiddleware } from './middlewares/rateLimit.middleware.ts';
+import { HealthRoutes } from './modules/health/health.routes.ts';
+import { TestingRoutes } from './modules/testing/testing.routes.ts';
+import { AppRouter } from './routes/app.routes.ts';
 
-const app: Express = express();
+/**
+ * App class orchestrating Express middlewares, versioned route pipelines, and error interceptors.
+ * Provides a cleanly configured and testable Express Application instance.
+ */
+export class App {
+    public readonly app: Application;
 
-app.use(express.json());
-app.use(morgan('dev'));
-app.use(
-    cors({
-        origin: '*',
-        credentials: true,
-    }),
-);
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
-
-const log = logger.child({ module: 'bck-index' });
-
-app.get('/health-check', async (_req: Request, res: Response) => {
-    const response: SuccessResponse = {
-        success: true,
-        message: 'Backend is healthy and working',
-        statusCode: StatusCodes.OK,
-    };
-
-    return res.status(response.statusCode).json({ response });
-});
-
-app.post('/post-db-check', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const validation = testValidationSchema.safeParse(req.body);
-
-        if (!validation.success) {
-            log.error(validation.error.message);
-            throw new ShipUError('Validation failed', StatusCodes.BAD_REQUEST);
-        }
-
-        const { stringData, intData } = validation.data;
-
-        if (!stringData) {
-            throw new ShipUError('String data is required', StatusCodes.BAD_REQUEST);
-        }
-
-        const data = await prisma.testing.create({
-            data: {
-                stringData,
-                intData,
-            },
-        });
-
-        const response: SuccessResponse<typeof data> = {
-            success: true,
-            statusCode: StatusCodes.CREATED,
-            message: 'Post endpoint and database working',
-            responseData: data,
-        };
-
-        return res.status(response.statusCode).json(response);
-    } catch (error) {
-        log.error(error);
-        next(error);
+    constructor() {
+        this.app = express();
+        this.configureMiddlewares();
+        this.configureRoutes();
+        this.configureErrorHandling();
     }
-});
 
-app.use(errorMiddleware);
+    /**
+     * Registers standard Express parsers, security headers, request logging, and global rate limiting.
+     */
+    private configureMiddlewares(): void {
+        this.app.use(express.json());
+        this.app.use(express.urlencoded({ extended: true }));
+        this.app.use(morgan('dev'));
+        this.app.use(
+            cors({
+                origin: '*',
+                credentials: true,
+            }),
+        );
+        this.app.use(cookieParser());
 
-export default app;
+        // Global rate limit: 100 requests per 60 seconds per client
+        this.app.use(
+            RateLimitMiddleware.limit({
+                maxRequests: 100,
+                windowSeconds: 60,
+                keyPrefix: 'global',
+            }),
+        );
+    }
+
+    /**
+     * Mounts domain routes. Zero inline database or business handler logic exists here.
+     * Delegates all routing downstream to self-contained module routers.
+     */
+    private configureRoutes(): void {
+        const appRouter = new AppRouter();
+
+        // 1. Primary Versioned API Gateway (/api/v1/health, /api/v1/testing)
+        this.app.use('/api/v1', appRouter.router);
+
+        // 2. Backward-compatible aliases delegating directly to respective module routers
+        this.app.use('/health-check', new HealthRoutes().router);
+        this.app.use('/post-db-check', new TestingRoutes().router);
+    }
+
+    /**
+     * Registers catch-all 404 handler and global exception processing middleware.
+     */
+    private configureErrorHandling(): void {
+        // Catch-all for undefined routes
+        this.app.use(NotFoundMiddleware.handle);
+
+        // Centralized application error handler
+        this.app.use(errorMiddleware);
+    }
+}
+
+// Export default Express application instance and App class
+export const appInstance = new App();
+export default appInstance.app;

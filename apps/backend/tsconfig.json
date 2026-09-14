@@ -1,10 +1,10 @@
 {
-    "extends": "@shipu/typescript-config/base.json",
-    "compilerOptions": {
-        "rootDir": "src",
-        "outDir": "dist",
-        "types": ["node"],
-        "allowImportingTsExtensions": true,
-        "emitDeclarationOnly": true
-    }
+  "extends": "@shipu/typescript-config/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true
+  }
 }

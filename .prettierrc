@@ -3,5 +3,20 @@
     "tabWidth": 4,
     "trailingComma": "all",
     "semi": true,
-    "printWidth": 100
+    "printWidth": 100,
+    "overrides": [
+        {
+            "files": [
+                "*.yml",
+                "*.yaml",
+                "*.json",
+                "*.json5",
+                "*.jsonc",
+                "*.md"
+            ],
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
 }

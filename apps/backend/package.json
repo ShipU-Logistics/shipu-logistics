@@ -1,37 +1,38 @@
 {
-    "name": "backend",
-    "module": "server.ts",
-    "type": "module",
-    "private": true,
-    "scripts": {
-        "dev": "nodemon"
-    },
-    "devDependencies": {
-        "@shipu/config": "workspace:*",
-        "@shipu/database-schema": "workspace:*",
-        "@shipu/logger": "workspace:*",
-        "@shipu/rabbitmq": "workspace:*",
-        "@shipu/redis": "workspace:*",
-        "@shipu/types-config": "workspace:*",
-        "@shipu/typescript-config": "workspace:*",
-        "@shipu/zod-validation": "workspace:*",
-        "@types/bun": "latest",
-        "@types/express": "^5.0.6",
-        "@types/morgan": "^1.9.10",
-        "@types/nodemon": "^3.1.1",
-        "@types/cookie-parser": "^1.4.10",
-        "@types/cors": "^2.8.19",
-        "@types/node": "^26.1.1"
-    },
-    "peerDependencies": {
-        "typescript": "^7.0.2"
-    },
-    "dependencies": {
-        "cookie-parser": "^1.4.7",
-        "cors": "^2.8.6",
-        "express": "^5.2.1",
-        "http-status-codes": "^2.1.0",
-        "morgan": "^1.11.0",
-        "nodemon": "^3.1.14"
-    }
+  "name": "backend",
+  "module": "server.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon"
+  },
+  "devDependencies": {
+    "@shipu/config": "workspace:*",
+    "@shipu/database-schema": "workspace:*",
+    "@shipu/logger": "workspace:*",
+    "@shipu/rabbitmq": "workspace:*",
+    "@shipu/redis": "workspace:*",
+    "@shipu/types-config": "workspace:*",
+    "@shipu/typescript-config": "workspace:*",
+    "@shipu/zod-validation": "workspace:*",
+    "@types/bun": "latest",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^26.1.1",
+    "@types/nodemon": "^3.1.1"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "http-status-codes": "^2.1.0",
+    "morgan": "^1.11.0",
+    "nodemon": "^3.1.14",
+    "zod": "^4.6.2"
+  }
 }

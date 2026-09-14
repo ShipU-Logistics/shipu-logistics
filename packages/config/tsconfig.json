@@ -1,7 +1,7 @@
 {
-    "extends": "@shipu/typescript-config/base.json",
-    "compilerOptions": {
-        "rootDir": "src",
-        "outDir": "dist"
-    }
+  "extends": "@shipu/typescript-config/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  }
 }
