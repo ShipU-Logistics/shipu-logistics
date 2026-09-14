@@ -49,7 +49,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: bun --filter=@shipu/database-schema exec prisma generate
+        run: bun run generate
 
       - name: Run ESLint
         run: bun run lint
@@ -70,7 +70,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: bun --filter=@shipu/database-schema exec prisma generate
+        run: bun run generate
 
       - name: Check TypeScript Types
         run: bun run check-types
@@ -92,7 +92,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: bun --filter=@shipu/database-schema exec prisma generate
+        run: bun run generate
 
       - name: Build Monorepo
         run: bun run build
