@@ -6,14 +6,7 @@
     "printWidth": 100,
     "overrides": [
         {
-            "files": [
-                "*.yml",
-                "*.yaml",
-                "*.json",
-                "*.json5",
-                "*.jsonc",
-                "*.md"
-            ],
+            "files": ["*.yml", "*.yaml", "*.json", "*.json5", "*.jsonc", "*.md"],
             "options": {
                 "tabWidth": 2
             }
